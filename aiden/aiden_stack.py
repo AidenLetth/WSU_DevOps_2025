@@ -13,11 +13,16 @@ from aws_cdk import (
     aws_cloudwatch_actions as cw_actions,
 )
 from constructs import Construct
+
+
+URL_MONITORITY_AVAILABILITY= "Availability"
+URL_MONITORITY_LATENCY = "Latency"
+URL_NAMESPACE = "Hungle"
+URLS = ['https://www.google.com','https://www.youtube.com','https://www.facebook.com']
 class AidenStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs):
         super().__init__(scope, construct_id, **kwargs)
-        URLS = ['https://www.google.com','https://www.bbc.com','https://www.facebook.com']
-
+       
         #LAMBDA FUNCTION
         fn = _lambda.Function(
             self, "Hungle",
@@ -147,7 +152,7 @@ class AidenStack(Stack):
          topic = sns.Topic(
         self,
         f"AvailabilityAlarm-{i}-{url.replace('https://','').replace('.','-')}",
-        display_name=f"Alarm for {url}"
+        display_name=f"Alarm for) {URLS} " 
     )
 # give permission for sns to invoke lambda https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_lambda/Function.html#aws_cdk.aws_lambda.Function.add_permission
         log_alarm_fn.add_permission(
