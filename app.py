@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 import os
-
 import aws_cdk as cdk
-
 from aiden.aiden_stack import AidenStack
-
-
 app = cdk.App()
 AidenStack(app, "AidenStack",
     # If you don't specify 'env', this stack will be environment-agnostic.
