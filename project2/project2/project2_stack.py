@@ -38,7 +38,7 @@ class Project2Stack(Stack):
 
         lambda_env = {"TABLE_NAME": table.table_name}
 
-        # CRUD Lambdas
+        # CRUD Lambdas https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_lambda/Function.html
         create_fn = _lambda.Function(
             self, "CreateTargetFn",
             runtime=_lambda.Runtime.PYTHON_3_11,

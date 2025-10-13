@@ -35,40 +35,44 @@ class PipelineStack(Stack):
         # Add the testing stage
          # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.pipelines
 
-        unit_tests = pipelines.ShellStep("unitTests",
+        unit_tests = pipelines.ShellStep(
+            "UnitTests",
             commands=[
-                'pip install -r requirements-dev.txt',
-                        'pip install aws-cdk-lib constructs',
-                        'python -m pytest -v'
-                        ],
-            )
-        alpha_test = pipelines.ShellStep("alphaTest",
+                'pip install -r requirements-dev.txt && pip install aws-cdk-lib constructs',
+                'echo "PYTHONPATH=$PWD" && PYTHONPATH=$PWD python -m pytest -v'])
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.pipelines/ShellStep.html
+        alpha_test = pipelines.ShellStep(
+            "AlphaTest",
             commands=[
-                "echo 'Running Alpha functional tests...'"
-                "aws lambda get-function --function-name Hungle-aidenStack-pipelineStack*|| echo 'Lambda test passed'",
+                "echo 'Running Alpha functional tests...' && "
+                "aws lambda get-function --function-name Hungle-aidenStack-pipelineStack* || echo 'Lambda test passed' && "
                 "echo 'Alpha functional tests completed.'"
-                        ],
-            )
-        beta_test = pipelines.ShellStep("betaTest",
+            ],
+        )
+        beta_test = pipelines.ShellStep(
+            "BetaTest",
             commands=[
-                "echo 'Running Beta integration tests...'"
-                "aws cloudwatch list-metrics --namespace Hungle || echo 'CloudWatch test passed'",
+                "echo 'Running Beta integration tests...' && "
+                "aws cloudwatch list-metrics --namespace Hungle || echo 'CloudWatch test passed' && "
                 "echo 'Beta integration tests completed.'"
-                        ],
-            )
-        gamma_test = pipelines.ShellStep("gammaTest",
+            ],
+        )
+        gamma_test = pipelines.ShellStep(
+            "GammaTest",
             commands=[
-                "echo 'Running Gamma end-to-end tests...'"
-                "aws cloudwatch get-dashboard --dashboard-name HungleDashboard || echo 'Dashboard test passed'",
+                "echo 'Running Gamma end-to-end tests...' && "
+                "aws cloudwatch get-dashboard --dashboard-name HungleDashboard || echo 'Dashboard test passed' && "
                 "echo 'Gamma end-to-end tests completed.'"
-                        ],  )
-        preprod_sercurity_test = pipelines.ShellStep("preprodSecurityTest",
+            ],
+        )
+        preprod_security_test = pipelines.ShellStep(
+            "PreprodSecurityTest",
             commands=[
-                "echo 'Running Preprod security tests...'"
-                "aws sts get-caller-identity",
+                "echo 'Running Preprod security tests...' && "
+                "aws sts get-caller-identity && "
                 "echo 'Preprod security tests completed.'"
-                        ],          
-            )
+            ],
+        )
         alpha = MyAppStage(self, 'alpha') 
         beta = MyAppStage(self, 'beta')
         gamma = MyAppStage(self, 'gamma')
@@ -89,7 +93,7 @@ class PipelineStack(Stack):
             ])
             )
         pipeline.add_stage(stage =gamma, pre=[gamma_test])
-        pipeline.add_stage(stage =preprod, pre=[preprod_sercurity_test])
+        pipeline.add_stage(stage =preprod, pre=[preprod_security_test])
         pipeline.add_stage(
             stage=prod,
             pre=[

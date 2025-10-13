@@ -19,26 +19,26 @@ def test_sqs_queue_created(getStack):
 #         "VisibilityTimeout": 300
 #     })
 
-#test 1
+#test 1 : test if 2 lambda functions are created
  def test_lambda(getStack):
     template = assertions.Template.from_stack(getStack)
     getStack.resource_count_is("AWS::Lambda::Function", 2)
  
- #test 2
+ #test 2: test if 3 sns topics are created
 def test_sns_topic(getStack):
     template = assertions.Template.from_stack(getStack)
     template.resource_count_is("AWS::SNS::Topic", 3)
 
-#test 3
+#test 3: test if sns subscription is created with email protocol and correct endpoint
 def test_sns_subscription(getStack):
     template = assertions.Template.from_stack(getStack)
     template.has_resource_properties("AWS::SNS::Subscription", {"Protocol": "email", "Endpoint": "22112326@student.westernsydney.edu.au"})
 
-#test 4
+#test 4: test if 2 iam roles are created
 def test_iam_role (getStack):
     template = assertions.Template.from_stack(getStack)
     template.resource_count_is("AWS::IAM::Role", 2)
-#test 5
+#test 5: test if 1 cloudwatch alarm is created
 def test_lambda_policies(getStack):
     template = assertions.Template.from_stack(getStack)
     template.has_resource_properties("AWS::IAM::Policy", { "PolicyDocument": {"Statement": [
@@ -47,7 +47,7 @@ def test_lambda_policies(getStack):
 
    
    
-   
+   #functional Test 1: Lambda timeout is less than or equal to 30 seconds
 def test_lambda_timeout(getStack):
     template = assertions.Template.from_stack(getStack)
     lambdas = template.find_resources("AWS::Lambda::Function")
