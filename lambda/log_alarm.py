@@ -6,16 +6,22 @@ from datetime import datetime
 DYNAMO_TABLE_NAME = 'AlarmLogs'
 
 
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(DYNAMO_TABLE_NAME)
+
 
 def lambda_handler(event, context):
 
     try:
-        for record in event('Records', []):
-            sns_message = record['Sns']['Message']
-            #  DynamoDB
-            table.put_item(
+            # Initialize DynamoDB resource 
+        dynamodb = boto3.resource('dynamodb')
+        table = dynamodb.Table(DYNAMO_TABLE_NAME)
+        print(f"Processing alarm event: {json.dumps(event)}")
+        if 'Records' in event and event['Records']:
+          # sns message 
+            sns_message = json.loads(event['Records'][0]['Sns']['Message'])
+            alarm_name = sns_message.get('AlarmName', 'unknown')
+            new_state = sns_message.get('NewStateValue', 'unknown')
+            reason = sns_message.get('NewStateReason', 'No reason provided')
+        if new_state == 'ALARM':
                 Item={
                     'begin': f"{sns_message.get('AlarmName', 'N/A')}_{datetime.utcnow().isoformat()}",
                     'AlarmName': sns_message.get('AlarmName', 'N/A'),
@@ -24,8 +30,8 @@ def lambda_handler(event, context):
                     'NewStateReason': sns_message.get('NewStateReason', 'N/A'),
                     'StateChangeTime': sns_message.get('StateChangeTime', 'N/A'),
                 }
-            )
-            print(f"Logged alarm to DynamoDB: {sns_message}")
+        table.put_item(Item=Item)  
+        print(f"Logged alarm to DynamoDB: {sns_message}")
         
         return {
             'statusCode': 200,

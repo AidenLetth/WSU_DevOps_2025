@@ -11,6 +11,7 @@ from aws_cdk import (
     aws_sns_subscriptions as subscriptions,
     aws_dynamodb as dynamodb,
     aws_cloudwatch_actions as cw_actions,
+    aws_codedeploy as codedeploy,
 )
 from constructs import Construct
 
@@ -20,6 +21,7 @@ URL_MONITORITY_LATENCY = "Latency"
 URL_NAMESPACE = "Hungle"
 URLS = ['https://www.google.com','https://www.youtube.com','https://www.facebook.com']
 class AidenStack(Stack):
+
     def __init__(self, scope: Construct, construct_id: str, **kwargs):
         super().__init__(scope, construct_id, **kwargs)
        
@@ -51,6 +53,40 @@ class AidenStack(Stack):
         rule.apply_removal_policy(RemovalPolicy.DESTROY)
         rule.add_target(targets.LambdaFunction(fn))
 
+        invocMetric = cloudwatch.Metric(
+            namespace="AWS/Lambda",
+            metric_name="Invocations",
+            statistic="Average",
+            period=Duration.minutes(5),
+        )
+        WHIMetric = fn.metric_invocations()
+        invocation_alarm = cloudwatch.Alarm(
+            self, 
+            id= 'alarm_lambda_InvocationAlarm',
+            metric = WHIMetric,
+            threshold = 1,
+            evaluation_periods = 1,
+            comparison_operator = cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
+        )
+
+        WHDMetric = fn.metric_duration()
+        duration_alarm = cloudwatch.Alarm(
+            self, 
+            id= 'alarm_lambda_DurationAlarm',
+            metric = WHDMetric, 
+            threshold = 29000,
+            evaluation_periods = 1,
+            comparison_operator = cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        )
+
+        version = fn.current_version
+        alias = _lambda.Alias(self, "LambdaAlias",
+                              alias_name="Prod",
+                              version=version)
+        deployment_group = codedeploy.LambdaDeploymentGroup(
+            self, "BlueGreenDeployment", alias = alias, 
+            deployment_config = codedeploy.LambdaDeploymentConfig.CANARY_10_PERCENT_5_MINUTES,
+            alarms = [invocation_alarm, duration_alarm])
 # dashboard https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/Dashboard.html
         
         dashboard = cloudwatch.Dashboard(self, "Project1Dashboard")

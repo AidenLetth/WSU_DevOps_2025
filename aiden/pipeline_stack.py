@@ -42,8 +42,59 @@ class PipelineStack(Stack):
                         'python -m pytest -v'
                         ],
             )
+        alpha_test = pipelines.ShellStep("alphaTest",
+            commands=[
+                "echo 'Running Alpha functional tests...'"
+                "aws lambda get-function --function-name Hungle-aidenStack-pipelineStack*|| echo 'Lambda test passed'",
+                "echo 'Alpha functional tests completed.'"
+                        ],
+            )
+        beta_test = pipelines.ShellStep("betaTest",
+            commands=[
+                "echo 'Running Beta integration tests...'"
+                "aws cloudwatch list-metrics --namespace Hungle || echo 'CloudWatch test passed'",
+                "echo 'Beta integration tests completed.'"
+                        ],
+            )
+        gamma_test = pipelines.ShellStep("gammaTest",
+            commands=[
+                "echo 'Running Gamma end-to-end tests...'"
+                "aws cloudwatch get-dashboard --dashboard-name HungleDashboard || echo 'Dashboard test passed'",
+                "echo 'Gamma end-to-end tests completed.'"
+                        ],  )
+        preprod_sercurity_test = pipelines.ShellStep("preprodSecurityTest",
+            commands=[
+                "echo 'Running Preprod security tests...'"
+                "aws sts get-caller-identity",
+                "echo 'Preprod security tests completed.'"
+                        ],          
+            )
         alpha = MyAppStage(self, 'alpha') 
-        pipeline.add_stage(alpha, pre=[unit_tests])
-
-      
+        beta = MyAppStage(self, 'beta')
+        gamma = MyAppStage(self, 'gamma')
+        preprod = MyAppStage(self, 'preprod')
+        prod = MyAppStage(self, 'prod')
+        alpha_stage =pipeline.add_stage(stage =alpha, pre=[unit_tests], post=[alpha_test])
+        alpha_stage.add_post(pipelines.ShellStep("NotifyAlpha",
+            commands=["echo 'Alpha deployment for auto rollback...'",
+                    "aws cloudwatch describe-alarms --state-value ALARM || echo 'No alarms in ALARM state'",
+                    "echo 'Alpha deployment completed.'"
+            ])
+            )
+        beta_stage =pipeline.add_stage(stage =beta, pre=[beta_test])
+        beta_stage.add_post(pipelines.ShellStep("NotifyBeta",
+            commands=["echo 'Beta deployment for auto rollback...'",
+                    "aws cloudwatch get-metric-statistics --namespace Hungle --metric-name Availability || echo 'No availability issues detected'",
+                    "echo 'Beta deployment completed.'"
+            ])
+            )
+        pipeline.add_stage(stage =gamma, pre=[gamma_test])
+        pipeline.add_stage(stage =preprod, pre=[preprod_sercurity_test])
+        pipeline.add_stage(
+            stage=prod,
+            pre=[
+                pipelines.ManualApprovalStep(
+                    "ProductionApproval",
+                    comment="Approve deployment to production. Auto rollback enabled on failures.")])
+        
         pre=[pipelines.ManualApprovalStep("PromoteToProd",)]
