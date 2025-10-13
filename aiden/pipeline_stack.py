@@ -35,7 +35,7 @@ class PipelineStack(Stack):
         # Add the testing stage
          # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.pipelines
 
-        all_tests = pipelines.ShellStep("AllTests",
+        unit_tests = pipelines.ShellStep("unitTests",
             commands=[
                 'pip install -r requirements-dev.txt',
                         'pip install aws-cdk-lib constructs',
@@ -43,4 +43,7 @@ class PipelineStack(Stack):
                         ],
             )
         alpha = MyAppStage(self, 'alpha') 
-        pipeline.add_stage(alpha, pre=[all_tests])
+        pipeline.add_stage(alpha, pre=[unit_tests])
+
+      
+        pre=[pipelines.ManualApprovalStep("PromoteToProd",)]
